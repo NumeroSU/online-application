@@ -84,11 +84,23 @@ openssl req -new -x509 -nodes -sha1 -days 365 -key host.key -out host.cert
 
 ## III - Déploiement
 
-### III.1 - Méthode
+### III.1 - Principe
 
 L'idée est, à chaque fois que le développement semble satisfaisant sur la machine locale, d'envoyer la dernière version sur ce dépot github: code source, scènes blender, version prête à être réimportée et version à déployer sur un serveur web.
 
 En respectant cette méthode, il est alors possible de garder trace des modifications faites, de mettre à jour simplement la version en ligne de l'application, et de permettre à d'autres collaborateurs de faire des modifications sur l'application.
 
-### III.2 - 
-L'installation pour 
+### III.2 - Méthodologie
+Une fois le projet validé sur la version locale, suivre ces instructions pour mettre à jour le dépôt:
+1. check modules
+2. build project
+3. vérifier la version de build.html depuis le project manager
+4. deploy project -> Download
+5. Extraire l'archive et ouvrir la page html pour vérifier le succès
+6. Enregistrer cette archive comme "project_deploy.zip"
+7. Commiter les fichiers sur la branche gh-pages. La version en ligne sera mise à jour.
+8. Depuis le project manager, faire un export du projet: "project_dev.zip"
+9. Commiter les fichiers du projet sur la branche master, sans le répertoire build, mais avec les fichiers cachés (.b4w_project et .b4w_icon.png)
+10. Faire une release, comprenant "project_deploy.zip", "project_dev.zip" ainsi qu'éventuellement le fichier server.py.
+
+
