@@ -3,8 +3,12 @@ Informations sur le fonctionnement, l'installation et la mise à jour, et le dé
 
 Sur cette page:
 * I - Technologies et architecture
-* II - Installation et configuration
-* III - 
+* II - Développement
+  * II.1 - Installation et configuration
+  * II.2 - Méthodologie: où développer et que faire?
+* III - Déploiement
+  * III.1 - Principe
+  * III.2 - Méthodologie
 
 ## I - Technologies et Architecture
 
@@ -81,6 +85,7 @@ openssl req -new -x509 -nodes -sha1 -days 365 -key host.key -out host.cert
 ```
 4. Exécuter la commande `python server.py` et laisser tourner le serveur ainsi créé, qui par défaut sera hébergé sur le port 5003 de l'adresse IP 127.0.0.1. Pour tester que cette étape ait fonctionné, se connecter depuis un navigateur web à l'adresse http://127.0.0.1:5003/models , la liste des modèles présents dans data devrait alors s'afficher. Victoire!
 
+### II.2 - Méthodologie: où développer et que faire?
 
 ## III - Déploiement
 
