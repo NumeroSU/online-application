@@ -38,3 +38,5 @@ La logique derrière la gestion des utilisateurs et des différentes versions de
 #### python et flask
 Un script python permet de gérer une API "maison", servant les modèles 3D à partir d'un serveur. Ce script est simple à modifier, et est basé sur python et flask. 
 
+### I.2 - "Architecture" du projet: qui vit où ?
+
