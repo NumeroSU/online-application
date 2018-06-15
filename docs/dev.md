@@ -1,6 +1,10 @@
 # Documentation développeur
 Informations sur le fonctionnement, l'installation et la mise à jour, et le développement de nouvelles fonctionnalités.
 
+Sur cette page:
+* I - Technologies et architecture
+* II - Installation et configuration
+* III - 
 
 ## I - Technologies et Architecture
 
@@ -39,4 +43,49 @@ La logique derrière la gestion des utilisateurs et des différentes versions de
 Un script python permet de gérer une API "maison", servant les modèles 3D à partir d'un serveur. Ce script est simple à modifier, et est basé sur python et flask. 
 
 ### I.2 - "Architecture" du projet: qui vit où ?
+L'application, une fois "déployée" (la procédure est décrite plus bas), est hébergée sur un serveur web, pour l'instant un de ceux offerts par le système des pages github: [https://loicnorgeot.github.io/numero/numero](https://loicnorgeot.github.io/numero/numero).
 
+Le "serveur d'API" qui permet de servir les modèles 3D à partir d'une base de données est lui exécuté sur un autre serveur - provisoirement mon ordinateur à l'ISCD - qui contient un dossier avec l'ensemble des fichiers 3D au format .mesh. Ce serveur est pour l'instant localisé à l'adresse IP 134.157.66.221, et n'est accessible que depuis le réseau interne de l'UPMC...
+
+Enfin, les fichiers de sauvegarde et les différentes configurations sont créées et sauvegardées sur un dépot github, rendu accessible par l'authentification de l'utilisateur. 
+
+L'application web, qui s'exécute dans un navigateur, communique donc avec le dépot github pour le mécanisme de sauvegarde, via des appels à l'API github, et avec le serveur contenant les modèles 3D (mon ordinateur), via des appels à l'API créée en python.
+
+## II - Développement
+
+Cette partie documente la manière d'installer et de configurer les différents outils uniquement, mais pas le déploiement de l'application ainsi réalisée (partie suivante).
+
+### II.1 - Installation et configuration 
+
+L'application peut se développer depuis windows, Mac ou Linux, et sur à peu près tous les ordinateurs, dans à peu près tous les navigateurs.
+
+**Installation de blender/blend4web**
+1. Installer blender (testé avec 2.79) à partir de la [page de téléchargement](https://www.blender.org/download/)
+2. Installer blend4web (testé avec 17.12) à partir de la [page de téléchargement](https://www.blend4web.com/en/downloads/). La version CE_lite, disponible en bas de la page suffit (téléchargement plus léger).
+3. Configurer blender pour prendre en compte blend4web en suivant [ces instructions](https://www.blend4web.com/doc/en/setup.html)
+
+**Import du projet blend4web**
+1. Pour se familiariser avec le workflow de blend4web, suivre les instructions de [cette page](https://www.blend4web.com/doc/en/workflow.html).
+2. Pour importer le projet, suivre les instructions de [cette page](https://www.blend4web.com/doc/en/project_manager.html#project-import), en important le fichier en "_dev.zip" disponible sur [cette page](https://github.com/loicNorgeot/numero/releases)
+3. Le projet devrait désormais être disponible dans l'arborescence de blend4web (cheminversb4w/projects/numero), et les fichiers éditables via n'importe quel éditeur de texte! 
+4. Ouvrir le fichier .html depuis le project manager de blend4web devrait maintenant permettre d'en voir la dernière version.
+
+**Mise en place de l'API pour les fichiers**
+1. Télécharger le fichier script.py, installer avec pip: flask...
+2. Créer un répertoire appelé data dans le même dossier que le fichier server.py
+3. Créer des certificats pour l'API. Sous linux ou MacOS: 
+```
+openssl genrsa 1024 > host.key
+chmod 400 host.key
+openssl req -new -x509 -nodes -sha1 -days 365 -key host.key -out host.cert
+```
+4. Exécuter la commande `python server.py`
+
+#### blend4web
+
+
+### II.2 - 
+
+## III - Déploiement
+
+L'installation pour 
