@@ -64,14 +64,14 @@ L'application peut se développer depuis windows, Mac ou Linux, et sur à peu pr
 2. Installer blend4web (testé avec 17.12) à partir de la [page de téléchargement](https://www.blend4web.com/en/downloads/). La version CE_lite, disponible en bas de la page suffit (téléchargement plus léger).
 3. Configurer blender pour prendre en compte blend4web en suivant [ces instructions](https://www.blend4web.com/doc/en/setup.html)
 
-**Import du projet blend4web**
+**Import du projet dans blend4web**
 1. Pour se familiariser avec le workflow de blend4web, suivre les instructions de [cette page](https://www.blend4web.com/doc/en/workflow.html).
 2. Pour importer le projet, suivre les instructions de [cette page](https://www.blend4web.com/doc/en/project_manager.html#project-import), en important le fichier en "_dev.zip" disponible sur [cette page](https://github.com/loicNorgeot/numero/releases)
 3. Le projet devrait désormais être disponible dans l'arborescence de blend4web (cheminversb4w/projects/numero), et les fichiers éditables via n'importe quel éditeur de texte! 
 4. Ouvrir le fichier .html depuis le project manager de blend4web devrait maintenant permettre d'en voir la dernière version.
 
 **Mise en place de l'API pour les fichiers**
-1. Télécharger le fichier script.py, installer avec pip: flask...
+1. Télécharger le fichier script.pyn, installer avec pip: flask...
 2. Créer un répertoire appelé data dans le même dossier que le fichier server.py
 3. Créer des certificats pour l'API. Sous linux ou MacOS: 
 ```
@@ -79,13 +79,16 @@ openssl genrsa 1024 > host.key
 chmod 400 host.key
 openssl req -new -x509 -nodes -sha1 -days 365 -key host.key -out host.cert
 ```
-4. Exécuter la commande `python server.py`
+4. Exécuter la commande `python server.py` et laisser tourner le serveur ainsi créé, qui par défaut sera hébergé sur le port 5003 de l'adresse IP 127.0.0.1. Pour tester que cette étape ait fonctionné, se connecter depuis un navigateur web à l'adresse http://127.0.0.1:5003/models , la liste des modèles présents dans data devrait alors s'afficher. Victoire!
 
-#### blend4web
-
-
-### II.2 - 
 
 ## III - Déploiement
 
+### III.1 - Méthode
+
+L'idée est, à chaque fois que le développement semble satisfaisant sur la machine locale, d'envoyer la dernière version sur ce dépot github: code source, scènes blender, version prête à être réimportée et version à déployer sur un serveur web.
+
+En respectant cette méthode, il est alors possible de garder trace des modifications faites, de mettre à jour simplement la version en ligne de l'application, et de permettre à d'autres collaborateurs de faire des modifications sur l'application.
+
+### III.2 - 
 L'installation pour 
