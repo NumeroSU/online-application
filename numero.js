@@ -325,7 +325,7 @@ function load_cb(data_id, success) {
       var id = $(this).attr("id");
       var clicked = $(this);
 
-      $.get( "https://134.157.66.221:5003/models/" + id, function( answer ) {
+      $.get( "https://" + api_ip + "/models/" + id, function( answer ) {
 
         var scene_object_list = m_scenes.get_all_objects("MESH");
 
@@ -440,25 +440,11 @@ exports.save_state = function(message, settings){
 }
 exports.load_state = function(settings){
 
-
-  var scene_object_list = m_scenes.get_all_objects("MESH");
-  var OBJStoDel = [];
-  for (var i = 0 ; i < scene_object_list.length ; i++){
-    if(scene_object_list[i].name!="cube" && scene_object_list[i].name!="Plane"){
-      OBJStoDel.push(scene_object_list[i]);
-    }
-  }
-  for (var i = 0 ; i < OBJStoDel.length ; i++){
-    var id = m_scenes.get_object_data_id(OBJStoDel[i]);
-    m_scenes.remove_object(OBJStoDel[i]);
-    //m_data.unload(id);
-  }
-
   //Placeholders authentification
-  var _user = settings.user;//"norgeotloic";
-  var _repo = settings.repo;//"test";
-  var _file = settings.file;//"save.csv";
-  var _sha  = settings.sha;//null;
+  var _user = settings.user;
+  var _repo = settings.repo;
+  var _file = settings.file;
+  var _sha  = settings.sha;
 
   //Get the current sha for the file
   $.ajax({
@@ -480,64 +466,92 @@ exports.load_state = function(settings){
         }
       }
 
+      //Delete the unused models
+      var scene_object_list = m_scenes.get_all_objects("MESH");
+      var OBJStoDel = [];
+      var OBJstoNotReload = [];
+      for (var i = 0 ; i < scene_object_list.length ; i++){
+        if(scene_object_list[i].name!="cube" && scene_object_list[i].name!="Plane" && !IDs.includes(scene_object_list[i].name)){
+          OBJStoDel.push(scene_object_list[i]);
+        }
+        if(IDs.includes(scene_object_list[i].name)){
+          OBJstoNotReload.push(scene_object_list[i].name);
+        }
+      }
+      for (var i = 0 ; i < OBJStoDel.length ; i++){
+        var id = m_scenes.get_object_data_id(OBJStoDel[i]);
+        m_scenes.remove_object(OBJStoDel[i]);
+      }
 
-      //Import everything
+      //Import everything but the ones already existing
+      var scene_object_list = m_scenes.get_all_objects("MESH");
+
       for(var k = 0 ; k < IDs.length ; k++){
-        $.ajax({
-          url: "https://134.157.66.221:5003/models/" + IDs[k],
-          success: function( ans ) {
 
-            //Import the model
-            var cube = m_scenes.get_object_by_name("cube");
-            var obj = m_objects.copy(cube, IDs[k], true);
-            var ibo = new Uint32Array(ans.data["ibo"]);
-            var vbo = new Float32Array(ans.data["vbo"]);
-            m_geo.override_geometry(
-              obj,
-              "logo",
-              ibo,
-              vbo,
-              false
-            );
-            m_scenes.append_object(obj);
-            m_transform.set_matrix(obj, MATs[k]);
-            //m_objects.remove_object(new_obj);
-            m_scenes.show_object(obj);
-            m_scenes.update_scene_materials_params();
+        //If the object is already loaded, just change its position
+        if(OBJstoNotReload.includes(IDs[k])){
+          var obj = m_scenes.get_object_by_name(IDs[k]);
+          m_transform.set_matrix(obj, MATs[k]);
+        }
+        //Otherwise, import it and set it to the right place
+        else{
 
-            //Make the lists correspond
-            //Removing from the list
-            $(".model_button").each(function(){
-              if($(this).attr("id") == IDs[k]){
-                $(this).remove();
-              }
-            })
-            //Adding to the loaded setion
-            var prefix = '<label id="' + IDs[k] + '" class="panel-block"><input type="checkbox">';
-            var suffix = "</input></label>";
-            $("#modelsloaded").append(prefix + IDs[k] + suffix);
-            $("#" + IDs[k]).find("input").bind('change', function(){
-              var localId = $(this).parent().attr("id");
-              console.log(localId);
-              var val = $(this).prop("checked");
-              var objlocal = m_scenes.get_object_by_name(localId);
-              if (val == true){
-                SELECTION.push(objlocal);
-                m_scenes.set_outline_intensity(objlocal, 1);
-              }
-              else{
-                var i = SELECTION.indexOf(objlocal);
-                if(i != -1) {
-                	SELECTION.splice(i, 1);
+          $.ajax({
+            url: "https://" + api_ip + "/models/" + IDs[k],
+            success: function( ans ) {
+
+              //Import the model
+              var cube = m_scenes.get_object_by_name("cube");
+              var obj = m_objects.copy(cube, IDs[k], true);
+              var ibo = new Uint32Array(ans.data["ibo"]);
+              var vbo = new Float32Array(ans.data["vbo"]);
+              m_geo.override_geometry(
+                obj,
+                "logo",
+                ibo,
+                vbo,
+                false
+              );
+              m_scenes.append_object(obj);
+              m_transform.set_matrix(obj, MATs[k]);
+              //m_objects.remove_object(new_obj);
+              m_scenes.show_object(obj);
+              m_scenes.update_scene_materials_params();
+
+              //Make the lists correspond
+              //Removing from the list
+              $(".model_button").each(function(){
+                if($(this).attr("id") == IDs[k]){
+                  $(this).remove();
                 }
-                m_scenes.set_outline_intensity(objlocal, 0);
-              }
-              console.log(SELECTION);
-            });
+              })
+              //Adding to the loaded setion
+              var prefix = '<label id="' + IDs[k] + '" class="panel-block"><input type="checkbox">';
+              var suffix = "</input></label>";
+              $("#modelsloaded").append(prefix + IDs[k] + suffix);
+              $("#" + IDs[k]).find("input").bind('change', function(){
+                var localId = $(this).parent().attr("id");
+                console.log(localId);
+                var val = $(this).prop("checked");
+                var objlocal = m_scenes.get_object_by_name(localId);
+                if (val == true){
+                  SELECTION.push(objlocal);
+                  m_scenes.set_outline_intensity(objlocal, 1);
+                }
+                else{
+                  var i = SELECTION.indexOf(objlocal);
+                  if(i != -1) {
+                  	SELECTION.splice(i, 1);
+                  }
+                  m_scenes.set_outline_intensity(objlocal, 0);
+                }
+                console.log(SELECTION);
+              });
 
-          },
-          async: false
-        });
+            },
+            async: false
+          });
+        }
       }
       $("#button_load").removeClass("is-loading");
       $(".modal").removeClass("is-active");
