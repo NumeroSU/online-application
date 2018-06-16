@@ -243,7 +243,7 @@ function main_canvas_move(e) {
       m_vec3.subtract(point, m_trans.get_translation(_obj), offset);
       console.log(offset);
 
-      for(i = 0 ; i < SELECTION.length ; i++){
+      for(var i = 0 ; i < SELECTION.length ; i++){
         var newPos = new Float32Array(3);
         m_vec3.add(m_trans.get_translation(SELECTION[i]), offset, newPos);
         // = m_trans.get_translation(SELECTION[i], _vec3_tmp2);
@@ -325,7 +325,7 @@ function load_cb(data_id, success) {
       var id = $(this).attr("id");
       var clicked = $(this);
 
-      $.get( "https://" + api_ip + "/models/" + id, function( answer ) {
+      $.get( api_ip + id + ".json", function( answer ) {
 
         var scene_object_list = m_scenes.get_all_objects("MESH");
 
@@ -333,8 +333,8 @@ function load_cb(data_id, success) {
         //copy the cube object, change its vbos and show it
 
         var obj = m_objects.copy(cube, id, true);
-        var ibo = new Uint32Array(answer.data["ibo"]);
-        var vbo = new Float32Array(answer.data["vbo"]);
+        var ibo = new Uint32Array(answer["ibo"]);
+        var vbo = new Float32Array(answer["vbo"]);
         m_geo.override_geometry(
           obj,
           "logo",
@@ -497,20 +497,20 @@ exports.load_state = function(settings){
         else{
 
           $.ajax({
-            url: "https://" + api_ip + "/models/" + IDs[k],
+            url: api_ip + IDs[k] + ".json",
             success: function( ans ) {
 
               //Import the model
               var cube = m_scenes.get_object_by_name("cube");
               var obj = m_objects.copy(cube, IDs[k], true);
-              var ibo = new Uint32Array(ans.data["ibo"]);
-              var vbo = new Float32Array(ans.data["vbo"]);
+              var ibo = new Uint32Array(ans["ibo"]);
+              var vbo = new Float32Array(ans["vbo"]);
               m_geo.override_geometry(
                 obj,
                 "logo",
                 ibo,
                 vbo,
-                false
+                true
               );
               m_scenes.append_object(obj);
               m_transform.set_matrix(obj, MATs[k]);
