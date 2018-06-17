@@ -54,7 +54,6 @@ $.each(modelsTabs, function(i,tab){
 
 //Load the available models
 function query_available_models(ip){
-
   $.get({
       url: ip + "list.csv",
       success: function(data){
@@ -62,19 +61,9 @@ function query_available_models(ip){
         for (var i = 0 ; i < models.length - 1; i++){
           var id = models[i][0].split(".")[0].trim();
           var prefix = '<a id="' + id + '" class="model_button panel-block"><span class="panel-icon"><i class="fas fa-cube" aria-hidden="true"></i></span>';
-          $("#modelslist").append(prefix + id + "</a>");
+          $("#modelslist").append(prefix + id + '</a>');
         }
       }
   });
-
-  /*
-  $.get( ip + "/models", function( answer ) {
-    for (i = 0 ; i < answer.data.length ; i++){
-      var id = answer.data[i].split(".")[0];
-      var prefix = '<a id="' + id + '" class="model_button panel-block"><span class="panel-icon"><i class="fas fa-cube" aria-hidden="true"></i></span>';
-      $("#modelslist").append(prefix + answer.data[i] + "</a>");
-    }
-  });
-  */
 }
 query_available_models(api_ip);

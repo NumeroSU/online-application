@@ -40,6 +40,7 @@ var _obj = null;
 var distToCam = null;
 var normalToCamera = new Float32Array(3);
 
+var oldmouseX = 0;
 
 // detect application mode
 var DEBUG = (m_ver.type() == "DEBUG");
@@ -186,6 +187,7 @@ function main_canvas_down(e) {
         //Si on appuie sur controle, on rotate
         if(e.metaKey || e.ctrlKey){
           _rotate_mode = true;
+          oldmouseX = e.offsetX;
 
 
           //Get the clicked point
@@ -229,7 +231,6 @@ function main_canvas_down(e) {
 
 
 }
-
 function main_canvas_up(e) {
     _drag_mode = false;
     _drag_z_mode = false;
@@ -237,7 +238,6 @@ function main_canvas_up(e) {
     m_app.enable_camera_controls();
     _obj = null;
 }
-
 function project_point_on_line(src, dst, point){
   var projected = new Float32Array(3);
   var initialPoint = src;
@@ -250,8 +250,6 @@ function project_point_on_line(src, dst, point){
   var dist = m_vec3.dot(vec, directionalVec) / m_vec3.dot(directionalVec, directionalVec);
   return dist;
 }
-
-
 function main_canvas_move(e) {
   if (_drag_z_mode){
 
@@ -295,6 +293,7 @@ function main_canvas_move(e) {
 
   else if(_rotate_mode){
     //Get the clicked point
+    /*
     var cam = m_scenes.get_active_camera();
     var pline = m_cam.calc_ray(cam, e.offsetX, e.offsetY, _pline_tmp);
     var camera_ray = m_math.get_pline_directional_vec(pline, _vec3_tmp);
@@ -318,10 +317,36 @@ function main_canvas_move(e) {
     var cross = new Float32Array(3);
     m_vec3.cross(diff, [0,0,1], cross);
 
+
     m_trans.rotate_z_local(_obj, Math.sign(cross[0])*angle);
     _rotation_origin_vector = currentVector;
+    */
 
-    //console.log(angle, dot, cross);
+    //Placeholder avec le mouvement en x au lieu de la rotation
+    var angle = 0.005 * (e.offsetX - oldmouseX);
+    oldmouseX = e.offsetX;
+    if(SELECTION.length == 1){
+      m_trans.rotate_z_local(_obj, angle );
+    }
+    else{
+      //Rotation of multiple objects https://www.blend4web.com/en/forums/topic/778/
+      //Get the center
+      var center = new Float32Array(3);
+      for(var i = 0 ; i < SELECTION.length ; i++){
+        var pos = m_trans.get_translation(SELECTION[i]);
+        m_vec3.add(center, pos, center);
+      }
+      m_vec3.scale(center, 1.0/SELECTION.length, center);
+
+      //Rotate the objects
+      var newPos = new Float32Array(3);
+      for(var i = 0 ; i < SELECTION.length ; i++){
+        m_vec3.rotateZ(m_trans.get_translation(SELECTION[i]), center, angle, newPos);
+        m_trans.set_translation_v(SELECTION[i], newPos);
+        m_trans.rotate_z_local(SELECTION[i], angle );
+      }
+    }
+
   }
   else if (_drag_mode){
 
@@ -392,6 +417,128 @@ function preloader_cb(percentage) {
 /**
  * callback executed when the scene data is loaded
  */
+function importModel(id, mat){
+
+  mat = (typeof mat !== 'undefined') ?  mat : [1,0,0,0,0,1,0,0,0,0,1,0,0,0,1.1,1];
+
+  $.get( api_ip + id + ".json", function( answer ) {
+
+    var scene_object_list = m_scenes.get_all_objects("MESH");
+
+    //Add the object to the scene
+    var obj = m_objects.copy(m_scenes.get_object_by_name("cube"), id, true);
+    var ibo = new Uint32Array(answer["ibo"]);
+    var vbo = new Float32Array(answer["vbo"]);
+    m_geo.override_geometry(
+      obj,
+      "logo",
+      ibo,
+      vbo,
+      false
+    );
+    m_scenes.append_object(obj);
+    m_transform.set_matrix(obj, mat);
+    //m_transform.set_translation(obj, 0, 0, 1.1);
+    m_scenes.show_object(obj);
+    m_scenes.update_scene_materials_params();
+
+    $("#" + id).remove();
+
+    //Remove the object from the list, and put it in the loaded section
+    var prefix = '<label id="' + id + '" class="panel-block">' + '<span class="panel-icon remove-model"><i class="fas fa-trash-alt" aria-hidden="true"></i></span>' + '<input type="checkbox">';
+    var suffix = "</input></label>";
+    $("#modelsloaded").append(prefix + id + suffix);
+
+    //Remove a model by clicking on the trash icon
+    $(".remove-model").click(function(e){
+      //remove the model from the list
+      e.preventDefault();
+      $(this).parent().remove();
+      var _id = $(this).parent().attr("id");
+      //Remove the model from the selection
+      var OBJ = m_scenes.get_object_by_name(_id);
+      if (SELECTION.includes(OBJ)){
+        var i = SELECTION.indexOf(OBJ);
+        if(i != -1) {
+          SELECTION.splice(i, 1);
+        }
+      }
+      //Remove the model from the scene
+      m_scenes.remove_object(OBJ);
+      //Add it back to the "available" tab
+      var prefix = '<a id="' + _id + '" class="model_button panel-block"><span class="panel-icon"><i class="fas fa-cube" aria-hidden="true"></i></span>';
+      $("#modelslist").append(prefix + _id + '</a>');
+      //Readd the logic
+      $("#" + id).click(loadModelFromClick);
+
+    })
+
+    //Add a model to the selection when checked
+    $("#" + id).find("input").bind('change', function(){
+      var val = $(this).prop("checked");
+      obj = m_scenes.get_object_by_name(id);
+      if (val == true){
+        SELECTION.push(obj);
+        m_scenes.set_outline_intensity(obj, 1);
+      }
+      else{
+        var i = SELECTION.indexOf(obj);
+        if(i != -1) {
+          SELECTION.splice(i, 1);
+        }
+        m_scenes.set_outline_intensity(obj, 0);
+      }
+      console.log(SELECTION);
+
+    });
+  });
+}
+function loadModelFromClick(){
+
+  var id = $(this).attr("id");
+  $(this).remove();
+  importModel(id);
+
+}
+function deleteallbut(BUT){
+  var scene_object_list = m_scenes.get_all_objects("MESH");
+  var OBJStoDel = [];
+  var OBJstoNotReload = [];
+  for (var i = 0 ; i < scene_object_list.length ; i++){
+    if(scene_object_list[i].name!="cube" && scene_object_list[i].name!="Plane" && !BUT.includes(scene_object_list[i].name)){
+      OBJStoDel.push(scene_object_list[i]);
+    }
+    if(BUT.includes(scene_object_list[i].name)){
+      OBJstoNotReload.push(scene_object_list[i].name);
+    }
+  }
+  for (var i = 0 ; i < OBJStoDel.length ; i++){
+    m_scenes.remove_object(OBJStoDel[i]);
+  }
+  return OBJstoNotReload;
+}
+function parseSaveFile(data){
+  var result = atob(data).split("\n");
+  //create the ids and mats table
+  var IDs  = [];
+  var MATs = [];
+  for(i = 0 ; i < result.length ; i++){
+    var line = result[i].split(",");
+    if(line.length > 2){
+      IDs.push(line[0]);
+      var mat = new Float32Array(16);
+      for ( var j = 0 ; j < 16 ; j++ ){
+        mat[j] = parseFloat(line[j+1]);
+      }
+      MATs.push(mat);
+    }
+  }
+  return {
+    "IDS":IDs,
+    "MATS":MATs
+  }
+}
+
 function load_cb(data_id, success) {
 
     if (!success) {
@@ -401,72 +548,11 @@ function load_cb(data_id, success) {
 
     m_app.enable_camera_controls();
 
-    // place your code here
-    //m_mouse.enable_mouse_hover_outline();
 
-    var cube = m_scenes.get_object_by_name("cube");
-
-    m_scenes.hide_object(cube);
+    m_scenes.hide_object(m_scenes.get_object_by_name("cube"));
 
     //Add an object to the scene
-    $(".model_button").click(function(){
-
-      var id = $(this).attr("id");
-      var clicked = $(this);
-
-      $.get( api_ip + id + ".json", function( answer ) {
-
-        var scene_object_list = m_scenes.get_all_objects("MESH");
-
-        //console.log(answer.data["vbo"]);
-        //copy the cube object, change its vbos and show it
-
-        var obj = m_objects.copy(cube, id, true);
-        var ibo = new Uint32Array(answer["ibo"]);
-        var vbo = new Float32Array(answer["vbo"]);
-        m_geo.override_geometry(
-          obj,
-          "logo",
-          ibo,
-          vbo,
-          false
-        );
-        m_scenes.append_object(obj);
-        m_transform.set_translation(obj, 0, 0, 1.1);
-        //m_objects.remove_object(new_obj);
-        m_scenes.show_object(obj);
-        m_scenes.update_scene_materials_params();
-
-        //Remove the object from the list, and put it in the loaded section
-        clicked.remove();
-        var prefix = '<label id="' + id + '" class="panel-block"><input type="checkbox">';
-        var suffix = "</input></label>";
-        $("#modelsloaded").append(prefix + id + suffix);
-
-        $("#" + id).find("input").bind('change', function(){
-          var val = $(this).prop("checked");
-          obj = m_scenes.get_object_by_name(id);
-          if (val == true){
-            SELECTION.push(obj);
-            m_scenes.set_outline_intensity(obj, 1);
-          }
-          else{
-            var i = SELECTION.indexOf(obj);
-            if(i != -1) {
-            	SELECTION.splice(i, 1);
-            }
-            m_scenes.set_outline_intensity(obj, 0);
-          }
-          console.log(SELECTION);
-
-        });
-
-      });
-
-
-
-
-    });
+    $(".model_button").click(loadModelFromClick);
 
 }
 
@@ -527,6 +613,8 @@ exports.save_state = function(message, settings){
 
 
 }
+
+
 exports.load_state = function(settings){
 
   //Placeholders authentification
@@ -537,113 +625,51 @@ exports.load_state = function(settings){
 
   //Get the current sha for the file
   $.ajax({
+
     url: "https://api.github.com/repos/" + _user + "/"+_repo+"/git/blobs/"+_sha,
+
     success: function( answer ) {
-      var result = atob(answer.content).split("\n");
-      //create the ids and mats table
-      var IDs  = [];
-      var MATs = [];
-      for(i = 0 ; i < result.length ; i++){
-        var line = result[i].split(",");
-        if(line.length > 2){
-          IDs.push(line[0]);
-          var mat = new Float32Array(16);
-          for ( var j = 0 ; j < 16 ; j++ ){
-            mat[j] = parseFloat(line[j+1]);
-          }
-          MATs.push(mat);
-        }
-      }
 
-      //Delete the unused models
-      var scene_object_list = m_scenes.get_all_objects("MESH");
-      var OBJStoDel = [];
-      var OBJstoNotReload = [];
-      for (var i = 0 ; i < scene_object_list.length ; i++){
-        if(scene_object_list[i].name!="cube" && scene_object_list[i].name!="Plane" && !IDs.includes(scene_object_list[i].name)){
-          OBJStoDel.push(scene_object_list[i]);
-        }
-        if(IDs.includes(scene_object_list[i].name)){
-          OBJstoNotReload.push(scene_object_list[i].name);
-        }
-      }
-      for (var i = 0 ; i < OBJStoDel.length ; i++){
-        var id = m_scenes.get_object_data_id(OBJStoDel[i]);
-        m_scenes.remove_object(OBJStoDel[i]);
-      }
+      var INFO = parseSaveFile(answer.content);
 
-      //Import everything but the ones already existing
-      var scene_object_list = m_scenes.get_all_objects("MESH");
-
-      for(var k = 0 ; k < IDs.length ; k++){
-
-        //If the object is already loaded, just change its position
-        if(OBJstoNotReload.includes(IDs[k])){
-          var obj = m_scenes.get_object_by_name(IDs[k]);
-          m_transform.set_matrix(obj, MATs[k]);
+      //Delete the unused models, and import the other ones
+      var OBJstoNotReload = deleteallbut(INFO["IDS"]);
+      for(var k = 0 ; k < INFO["IDS"].length ; k++){
+        if(OBJstoNotReload.includes(INFO["IDS"][k])){
+          var obj = m_scenes.get_object_by_name(INFO["IDS"][k]);
+          m_transform.set_matrix(obj, INFO["MATS"][k]);
         }
-        //Otherwise, import it and set it to the right place
         else{
-
-          $.ajax({
-            url: api_ip + IDs[k] + ".json",
-            success: function( ans ) {
-
-              //Import the model
-              var cube = m_scenes.get_object_by_name("cube");
-              var obj = m_objects.copy(cube, IDs[k], true);
-              var ibo = new Uint32Array(ans["ibo"]);
-              var vbo = new Float32Array(ans["vbo"]);
-              m_geo.override_geometry(
-                obj,
-                "logo",
-                ibo,
-                vbo,
-                true
-              );
-              m_scenes.append_object(obj);
-              m_transform.set_matrix(obj, MATs[k]);
-              //m_objects.remove_object(new_obj);
-              m_scenes.show_object(obj);
-              m_scenes.update_scene_materials_params();
-
-              //Make the lists correspond
-              //Removing from the list
-              $(".model_button").each(function(){
-                if($(this).attr("id") == IDs[k]){
-                  $(this).remove();
-                }
-              })
-              //Adding to the loaded setion
-              var prefix = '<label id="' + IDs[k] + '" class="panel-block"><input type="checkbox">';
-              var suffix = "</input></label>";
-              $("#modelsloaded").append(prefix + IDs[k] + suffix);
-              $("#" + IDs[k]).find("input").bind('change', function(){
-                var localId = $(this).parent().attr("id");
-                console.log(localId);
-                var val = $(this).prop("checked");
-                var objlocal = m_scenes.get_object_by_name(localId);
-                if (val == true){
-                  SELECTION.push(objlocal);
-                  m_scenes.set_outline_intensity(objlocal, 1);
-                }
-                else{
-                  var i = SELECTION.indexOf(objlocal);
-                  if(i != -1) {
-                  	SELECTION.splice(i, 1);
-                  }
-                  m_scenes.set_outline_intensity(objlocal, 0);
-                }
-                console.log(SELECTION);
-              });
-
-            },
-            async: false
-          });
+          importModel(INFO["IDS"][k], INFO["MATS"][k]);
         }
       }
       $("#button_load").removeClass("is-loading");
       $(".modal").removeClass("is-active");
+    }
+  });
+}
+exports.load_default = function(){
+
+  //Get the current sha for the file
+  $.ajax({
+    url: "https://api.github.com/repos/NumeroSU/temporary-saves/contents/tests.csv",
+    success: function( answer ) {
+
+      var INFO = parseSaveFile(answer.content);
+
+      //Delete the unused models, and import the other ones
+      var OBJstoNotReload = deleteallbut(INFO["IDS"]);
+      for(var k = 0 ; k < INFO["IDS"].length ; k++){
+        if(OBJstoNotReload.includes(INFO["IDS"][k])){
+          var obj = m_scenes.get_object_by_name(INFO["IDS"][k]);
+          m_transform.set_matrix(obj, INFO["MATS"][k]);
+        }
+        else{
+          importModel(INFO["IDS"][k], INFO["MATS"][k]);
+        }
+      }
+      $("#button_load_default").removeClass("is-loading");
+
     }
   });
 

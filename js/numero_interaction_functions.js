@@ -16,6 +16,9 @@ function onLogin(){
 }
 function getRepos(data){
   $("#github_repositories").prop('disabled', false);
+  $("#github_repositories").html('<option value="" disabled selected>Repository</option>');
+  $("#button_save_modal").prop('disabled', false);
+  $("#button_load_modal").prop('disabled', false);
   //Create the list of repositories
   for( i = 0 ; i < data.length ; i++){
     $("#github_repositories").append("<option>" + data[i].name + "</option>");
@@ -30,6 +33,8 @@ function getFiles(repo_name){
       headers: { Authorization: "Basic " + auth },
       success: function(data){
         $("#github_files").prop('disabled', false);
+        $("#github_files").html('<option value="" disabled selected>File</option>');
+
         for( i = 0 ; i < data.length ; i++){
           $("#github_files").append("<option>" + data[i].name + "</option>");
         }
@@ -45,6 +50,7 @@ function getFileVersions(file_name){
       success: function(data){
         $("#button_load").prop('disabled', false);
         $("#github_version").prop('disabled', false);
+        $("#github_version").html('<option value="" disabled selected>Version</option>');
         for( i = 0 ; i < data.length ; i++){
           $("#github_version").append("<option sha='" + data[i].commit.tree.sha + "'>" + data[i].commit.author.name + " - " + data[i].commit.message + "</option>");
         }

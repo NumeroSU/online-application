@@ -62,6 +62,10 @@ $("#button_load").click(function(){
   }
   b4w.require("numero_main").load_state(sets);
 });
+$("#button_load_default").click(function(){
+  $(this).addClass("is-loading");
+  b4w.require("numero_main").load_default();
+});
 
 //Close the modal
 $(".modal-close").click(function(){
