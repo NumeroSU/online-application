@@ -26,6 +26,7 @@ var m_quat  = require("quat");
 
 var SELECTION = [];
 var _drag_mode = false;
+var _drag_z_mode = false;
 var _rotate_mode = false;
 var _obj_delta_xy = new Float32Array(2);
 var _pline_tmp = m_math.create_pline();//new Float32Array(3);
@@ -35,6 +36,9 @@ var _vec3_tmp3 = new Float32Array(3);
 var _rotation_origin_vector = new Float32Array(3);
 var FLOOR_PLANE_NORMAL = [0,0,1];
 var _obj = null;
+
+var distToCam = null;
+var normalToCamera = new Float32Array(3);
 
 
 // detect application mode
@@ -47,12 +51,24 @@ var APP_ASSETS_PATH = m_cfg.get_assets_path("numero");
  * export the method to initialize the app (called at the bottom of this file)
  */
 exports.init = function() {
+
+  //Set quality
+  m_cfg.apply_quality(m_cfg.P_CUSTOM);
+  m_cfg.set("enable_outlining", true);
+  m_cfg.set("shadows", false);
+  m_cfg.set("anisotropic_filtering", false);
+  m_cfg.set("antialiasing", true);
+  m_cfg.set("compositing", false);
+  m_cfg.set("motion_blur", false);
+  m_cfg.set("msaa_samples", 1);
+  //m_cfg.set("max_fps", 1000);
+
     m_app.init({
         canvas_container_id: "main_canvas_container",
         callback: init_cb,
-        show_fps: DEBUG,
         console_verbose: DEBUG,
-        autoresize: true
+        autoresize: true,
+        show_fps: DEBUG,
     });
 }
 
@@ -102,7 +118,7 @@ function main_canvas_down(e) {
       e.preventDefault();
 
   _obj = m_scenes.pick_object(e.offsetX, e.offsetY);
-  console.log(_obj);
+  //console.log(_obj);
 
   //Appuie t'on en clic droit? Si oui, selection
   if (e.button==2) {
@@ -110,7 +126,7 @@ function main_canvas_down(e) {
       //Adapt the checkbox
       var id = m_scenes.get_object_name(_obj);
       //Multiselection avec controle
-      if(e.ctrlKey){
+      if(e.metaKey || e.ctrlKey){
         if (SELECTION.includes(_obj)){
           $("#" + id).find("input").prop("checked", false);
           var i = SELECTION.indexOf(_obj);
@@ -165,9 +181,10 @@ function main_canvas_down(e) {
       if (SELECTION.length>0) {
         m_app.disable_camera_controls();
         var cam = m_scenes.get_active_camera();
+        var cam_trans = m_trans.get_translation(cam, _vec3_tmp2);
 
         //Si on appuie sur controle, on rotate
-        if(e.ctrlKey){
+        if(e.metaKey || e.ctrlKey){
           _rotate_mode = true;
 
 
@@ -181,10 +198,24 @@ function main_canvas_down(e) {
 
           _vec3_tmp3 = m_trans.get_translation(_obj);
           m_vec3.subtract(point, _vec3_tmp3, _rotation_origin_vector);
-          console.log(point, _vec3_tmp3, _rotation_origin_vector);
+          //console.log(point, _vec3_tmp3, _rotation_origin_vector);
         }
         else{
-          _drag_mode = true;
+          if(e.button==0)
+            _drag_mode = true;
+          else if (e.button==1){
+            _drag_z_mode = true;
+
+            distToCam = project_point_on_line(cam_trans, [0,0,cam_trans[2]], m_trans.get_translation(_obj));
+
+            //Get the plane normal to the camera
+            var pivot = new Float32Array(3);
+            m_cam.target_get_pivot(cam, pivot);
+            var tmpnormalToCamera = new Float32Array(3);
+            m_vec3.subtract(cam_trans, pivot, tmpnormalToCamera);
+            tmpnormalToCamera[2] = 0;
+            m_vec3.normalize(tmpnormalToCamera, normalToCamera);
+          }
 
           m_trans.get_translation(_obj, _vec3_tmp);
           m_cam.project_point(cam, _vec3_tmp, _obj_delta_xy);
@@ -201,18 +232,28 @@ function main_canvas_down(e) {
 
 function main_canvas_up(e) {
     _drag_mode = false;
+    _drag_z_mode = false;
     _rotate_mode = false;
-    // enable camera controls after releasing the object
-    //if (!_enable_camera_controls) {
-        m_app.enable_camera_controls();
-        _obj = null;
-    //    _enable_camera_controls = true;
-    //}
+    m_app.enable_camera_controls();
+    _obj = null;
+}
+
+function project_point_on_line(src, dst, point){
+  var projected = new Float32Array(3);
+  var initialPoint = src;
+  var directionalVec = new Float32Array(3);
+  m_vec3.subtract(dst, src, directionalVec)
+  m_vec3.normalize(directionalVec, directionalVec);
+
+  var vec = new Float32Array(3);
+  m_vec3.subtract(point, src, vec);
+  var dist = m_vec3.dot(vec, directionalVec) / m_vec3.dot(directionalVec, directionalVec);
+  return dist;
 }
 
 
 function main_canvas_move(e) {
-  if (_drag_mode){
+  if (_drag_z_mode){
 
     // calculate viewport coordinates
     var cam = m_scenes.get_active_camera();
@@ -220,39 +261,39 @@ function main_canvas_move(e) {
     var x = e.offsetX;
     var y = e.offsetY;
 
+
+
     if (x >= 0 && y >= 0) {
-      x -= _obj_delta_xy[0];
-      y -= _obj_delta_xy[1];
 
       // emit ray from the camera
       var pline = m_cam.calc_ray(cam, x, y, _pline_tmp);
       var camera_ray = m_math.get_pline_directional_vec(pline, _vec3_tmp);
 
-      // calculate ray/floor_plane intersection point
+      // calculate ray/normal_plane intersection point
+      var point = new Float32Array(3);
       var cam_trans = m_trans.get_translation(cam, _vec3_tmp2);
       m_math.set_pline_initial_point(_pline_tmp, cam_trans);
       m_math.set_pline_directional_vec(_pline_tmp, camera_ray);
-      var point = m_math.line_plane_intersect(FLOOR_PLANE_NORMAL, -1.1, _pline_tmp, _vec3_tmp3);
+      cam_trans[2]=0;
+      m_math.line_plane_intersect(normalToCamera, distToCam - m_vec3.length(cam_trans) , _pline_tmp, point);
 
-
-      // do not process the parallel case and intersections behind the camera
-      //if (point && camera_ray[2] < 0) {
-      //    m_trans.set_translation_v(obj_parent, point);
-      //else
+      //Apply the offset
       var offset = new Float32Array(3);
       m_vec3.subtract(point, m_trans.get_translation(_obj), offset);
-      console.log(offset);
-
+      offset[0] = 0;
+      offset[1] = 0;
       for(var i = 0 ; i < SELECTION.length ; i++){
         var newPos = new Float32Array(3);
         m_vec3.add(m_trans.get_translation(SELECTION[i]), offset, newPos);
-        // = m_trans.get_translation(SELECTION[i], _vec3_tmp2);
         m_trans.set_translation_v(SELECTION[i], newPos);
       }
     }
+
+
+
   }
 
-  if(_rotate_mode){
+  else if(_rotate_mode){
     //Get the clicked point
     var cam = m_scenes.get_active_camera();
     var pline = m_cam.calc_ray(cam, e.offsetX, e.offsetY, _pline_tmp);
@@ -280,7 +321,46 @@ function main_canvas_move(e) {
     m_trans.rotate_z_local(_obj, Math.sign(cross[0])*angle);
     _rotation_origin_vector = currentVector;
 
-    console.log(angle, dot, cross);
+    //console.log(angle, dot, cross);
+  }
+  else if (_drag_mode){
+
+    // calculate viewport coordinates
+    var cam = m_scenes.get_active_camera();
+
+    var x = e.offsetX;
+    var y = e.offsetY;
+
+    if (x >= 0 && y >= 0) {
+      //x -= _obj_delta_xy[0];
+      //y -= _obj_delta_xy[1];
+
+      // emit ray from the camera
+      var pline = m_cam.calc_ray(cam, x, y, _pline_tmp);
+      var camera_ray = m_math.get_pline_directional_vec(pline, _vec3_tmp);
+
+      // calculate ray/floor_plane intersection point
+      var cam_trans = m_trans.get_translation(cam, _vec3_tmp2);
+      m_math.set_pline_initial_point(_pline_tmp, cam_trans);
+      m_math.set_pline_directional_vec(_pline_tmp, camera_ray);
+      var point = m_math.line_plane_intersect(FLOOR_PLANE_NORMAL, -m_trans.get_translation(_obj)[2], _pline_tmp, _vec3_tmp3);
+
+
+      // do not process the parallel case and intersections behind the camera
+      //if (point && camera_ray[2] < 0) {
+      //    m_trans.set_translation_v(obj_parent, point);
+      //else
+      var offset = new Float32Array(3);
+      m_vec3.subtract(point, m_trans.get_translation(_obj), offset);
+      //console.log(offset);
+
+      for(var i = 0 ; i < SELECTION.length ; i++){
+        var newPos = new Float32Array(3);
+        m_vec3.add(m_trans.get_translation(SELECTION[i]), offset, newPos);
+        // = m_trans.get_translation(SELECTION[i], _vec3_tmp2);
+        m_trans.set_translation_v(SELECTION[i], newPos);
+      }
+    }
   }
 }
 
@@ -298,6 +378,15 @@ function load() {
  */
 function preloader_cb(percentage) {
     m_preloader.update_preloader(percentage);
+    $("#rideau").css("width", 517 - 5.17*percentage);
+    if (percentage == 100) {
+        $("#clickSomewhere").css("opacity",1);
+        $("#loadingScreen").css("cursor","pointer");
+        $("#loadingScreen").click(function(){
+          $(this).fadeOut(1000);
+        });
+        return;
+}
 }
 
 /**

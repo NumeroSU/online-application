@@ -1,6 +1,6 @@
 //Manage the first tabs
-var buttons = ["#button_settings_3d", "#button_settings_scene", "#button_settings_help"];
-var divs    = ["#settings_3d",        "#settings_scene",        "#settings_help"];
+var buttons = ["#button_settings_login", "#button_settings_save", "#button_settings_models", "#button_settings_about"];
+var divs    = ["#settings_login",        "#settings_save",        "#settings_models",        "#settings_about"];
 $.each(buttons, function(i,button){
   $(button).click(function(){
     if( ! $(this).hasClass("is-active") ){

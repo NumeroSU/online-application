@@ -1,3 +1,4 @@
+//Update the github content on login
 $("#login").click(onLogin);
 $("#github_repositories").change(function(){
   $("#github_files").html("");
@@ -17,7 +18,7 @@ $("#github_version").change(function(){
   console.log(_file_sha);
 });
 
-//Load and save
+//Load and save configurations
 $("#button_save_modal").click(function(){
   $("#make_commit_field").show();
   $("#load_commit_field").hide();
