@@ -24,10 +24,10 @@ Une fois des objets chargés dans la scène:
 ## 2 - Connexion à github
 La connexion à github est facultative pour utiliser l'application, mais sera  *obligatoire* pour pouvoir sauvegarder/charger des configurations.
 
-Dans tous les cas, l'utilisateur a accès à l'ensemble des modèles disponibles sur [ce dépot github]() (à mettre à jour avec les nouveaux fragments donc) pour les importer et les manipuler dans la scène, et dépendant de ses "droits":
+Dans tous les cas, l'utilisateur a accès à l'ensemble des modèles disponibles sur [ce dépot github](https://github.com/NumeroSU/models-database) (à mettre à jour avec les nouveaux fragments donc) pour les importer et les manipuler dans la scène, et dépendant de ses "droits":
 
-* Si l'utilisateur fait partie de l'organisation [NumeroSU](), il pourra modifier des configurations de démonstration ("Load default").
-* Si l'utilisateur ne fait pas partie de l'organisation [NumeroSU](), il ne pourra pas modifier les démonstrations, mais pourra créer et éditer des configurations sur un dépot qu'il aura créé auparavant.
+* Si l'utilisateur fait partie de l'organisation [NumeroSU](https://github.com/NumeroSU), il pourra modifier des configurations de démonstration ("Load default").
+* Si l'utilisateur ne fait pas partie de l'organisation [NumeroSU](https://github.com/NumeroSU), il ne pourra pas modifier les démonstrations, mais pourra créer et éditer des configurations sur un dépot qu'il aura créé auparavant.
 * Enfin, si l'utilisateur n'a pas de compte github, il ne pourra "que" charger et manipuler les objets de la base de données.
 
 Pour se connecter, rentrer ses identifiants dans l'onglet "login" du menu principal, et valider en cliquant sur le bouton "login":
