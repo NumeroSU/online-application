@@ -1,6 +1,11 @@
 # Documentation utilisateur
 Cette documentation est évidemment provisoire, l'application n'étant encore qu'au stade de "démonstrateur".
 
+Sur cette page:
+* 1 - Ajout/suppresion d'objets 3D à la scène et manipulation
+* 2 - Connexion à github
+* 3 - Chargement / Sauvegarde de reconstructions
+
 ## 1 - Ajout/suppresion d'objets 3D à la scène et manipulation
 Dans l'onglet "models" du menu principal figurent les objets dispoinbles dans la base de données. **Attention à ne pas changer l'url présente!**.
 
