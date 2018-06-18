@@ -19,7 +19,7 @@ En cliquant sur un objet de l'onglet "models available", l'objet se charge dans 
 
 #### Manipulations 3D
 Une fois des objets chargés dans la scène:
-* Clic droit pour sélectionner un objet.
+* Clic droit pour sélectionner/déselectionner un objet.
 * Ctrl+clic droit (cmd+clic droit sous Mac) pour la sélection multiple.
 * Clic gauche + drag sur un ou plusieurs objets sélectionnés pour les déplacer horizontalement
 * Clic du milieu + drag pour le déplacement vertical
